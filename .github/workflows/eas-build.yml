@@ -1,0 +1,77 @@
+name: EAS Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+
+jobs:
+  build:
+    name: Build ${{ github.event.inputs.profile || 'preview' }} APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: mr-tik/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: mr-tik
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Login to Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build APK
+        run: |
+          eas build --platform android --profile ${{ github.event.inputs.profile || 'preview' }} --non-interactive --no-wait
+        working-directory: mr-tik
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Wait for build
+        uses: expo/wait-for-build-action@v1
+        with:
+          expo-token: ${{ secrets.EXPO_TOKEN }}
+          build-command: |
+            eas build --platform android --profile ${{ github.event.inputs.profile || 'preview' }} --non-interactive
+
+      - name: Download artifact
+        run: |
+          BUILD_ID=$(eas build:list --platform android --limit 1 --json | jq -r '.[0].id')
+          eas build:download --artifact-path ./mr-tik.apk --build-id $BUILD_ID
+        working-directory: mr-tik
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mr-tik-${{ github.event.inputs.profile || 'preview' }}-apk
+          path: mr-tik/mr-tik.apk
+          retention-days: 30

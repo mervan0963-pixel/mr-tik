@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "mr tik",
+    "slug": "mr-tik",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mrtik.app"
+    },
+    "android": {
+      "package": "com.mrtik.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#000000",
+        "foregroundImage": "./assets/icon.png"
+      },
+      "permissions": [
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.WAKE_LOCK"
+      ],
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      [
+        "expo-video",
+        {
+          "backgroundPlayback": true
+        }
+      ],
+      "expo-document-picker",
+      "expo-file-system"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b11d56a3-72eb-4c47-9161-be759a11092c"
+      }
+    }
+  }
+}

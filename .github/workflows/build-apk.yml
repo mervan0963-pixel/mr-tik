@@ -1,0 +1,83 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./mr-tik
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Configure EAS
+        run: |
+          echo "Configuring EAS..."
+          npx eas build:configure --platform android --non-interactive
+        working-directory: ./mr-tik
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build APK (Preview)
+        if: github.event.inputs.build_type == 'preview' || github.event_name != 'workflow_dispatch'
+        run: |
+          npx eas build --platform android --profile preview --non-interactive --no-wait
+        working-directory: ./mr-tik
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build APK (Production)
+        if: github.event.inputs.build_type == 'production'
+        run: |
+          npx eas build --platform android --profile production --non-interactive --no-wait
+        working-directory: ./mr-tik
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Wait for build and download artifact
+        uses: expo/wait-for-build-action@v1
+        if: always()
+        with:
+          expo-token: ${{ secrets.EXPO_TOKEN }}
+          build-command: |
+            npx eas build --platform android --profile ${{ github.event.inputs.build_type || 'preview' }} --non-interactive
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mr-tik-apk
+          path: |
+            **/build/outputs/apk/**/*.apk
+            **/*.apk
+          retention-days: 30
