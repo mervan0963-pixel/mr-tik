@@ -60,4 +60,4 @@ jobs:
         with:
           name: mr-tik-${{ github.event.inputs.profile || 'preview' }}-apk
           path: ./mr-tik.apk
-          retention-days: 30
+          retention-days: 30# Rebuild after adding EXPO_TOKEN secret
