@@ -53,23 +53,6 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Wait for build completion
-        run: |
-          echo "Waiting for build to complete..."
-          for i in {1..30}; do
-            STATUS=$(eas build:list --platform android --limit 1 --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['status'] if d else '')")
-            if [ "$STATUS" = "finished" ]; then
-              echo "Build completed successfully"
-              exit 0
-            elif [ "$STATUS" = "errored" ] || [ "$STATUS" = "canceled" ]; then
-              echo "Build failed with status: $STATUS"
-              exit 1
-            fi
-            sleep 10
-          done
-          echo "Build did not complete in time"
-          exit 1
-
       - name: Download APK artifact
         run: |
           eas build:download --platform android --profile ${{ github.event.inputs.profile || 'preview' }} --non-interactive
